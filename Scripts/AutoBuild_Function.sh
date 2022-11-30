@@ -206,9 +206,86 @@ EOF
 	ECHO "[Firmware_Diy_Main] Done"
 }
 
+Firmware_Diy_Other() {
+	ECHO "[Firmware_Diy_Other] Starting ..."
+	CD ${WORK}
+	if [[ ${AutoBuild_Features} == true ]]
+	then
+		if [[ -n ${Author_URL} ]]
+		then
+			cat >> ${CONFIG_TEMP} <<EOF
+
+CONFIG_KERNEL_BUILD_USER="${Author}"
+CONFIG_KERNEL_BUILD_DOMAIN="${Author_URL}"
+EOF
+		fi
+		for i in $(du -ah ${CustomFiles}/Patches | awk '{print $2}' | sort | uniq)
+		do
+			if [[ -f $i ]]
+			then
+				if [[ $i =~ "-generic.patch" ]]
+				then
+					ECHO "Found generic patch file: $i"
+					patch < $i -p1 -d ${WORK}
+				elif [[ $i =~ "-${TARGET_BOARD}.patch" ]]
+				then
+					ECHO "Found board ${TARGET_BOARD} patch file: $i"
+					patch < $i -p1 -d ${WORK}
+				elif [[ $i =~ "-${TARGET_PROFILE}.patch" ]]
+				then
+					ECHO "Found profile ${TARGET_PROFILE} patch file: $i"
+					patch < $i -p1 -d ${WORK}
+				fi
+			fi
+		done ; unset i
+		Kconfig_Path=${CustomFiles}/Kconfig
+		Tree=${WORK}/target/linux
+		cd ${Kconfig_Path}
+		for i in $(du -a | awk '{print $2}' | busybox sed -r 's/.\//\1/' | grep -wv '^.' | sort | uniq)
+		do
+			if [[ -d $i && $(ls -1 $i 2> /dev/null) ]]
+			then
+				:
+			elif [[ -e $i ]]
+			then
+				_Kconfig=$(dirname $i)
+				__Kconfig=$(basename $i)
+				ECHO " - Found Kconfig_file: ${__Kconfig} at ${_Kconfig}"
+				if [[ -e ${Tree}/$i && ${__Kconfig} != config-generic ]]
+				then
+					ECHO " -- Found Tree: ${Tree}/$i, refreshing ${Tree}/$i ..."
+					echo >> ${Tree}/$i
+					if [[ $? == 0 ]]
+					then
+						cat $i >> ${Tree}/$i
+						ECHO " --- Done"
+					else
+						ECHO " --- Failed to write new content ..."
+					fi
+				elif [[ ${__Kconfig} == config-generic ]]
+				then
+					for j in $(ls -1 ${Tree}/${_Kconfig} | egrep "config-[0-9]+")
+					do
+						ECHO " -- Generic Kconfig_file, refreshing ${Tree}/${_Kconfig}/$j ..."
+						echo >> ${Tree}/${_Kconfig}/$j
+						if [[ $? == 0 ]]
+						then
+							cat $i >> ${Tree}/${_Kconfig}/$j
+							ECHO " --- Done"
+						else
+							ECHO " --- Failed to write new content ..."
+						fi
+					done
+				fi
+			fi
+		done ; unset i
+	fi
+	CD ${WORK}
+	ECHO "[Firmware_Diy_Other] Done"
+}
+
 Firmware_Diy_End() {
 	ECHO "[Firmware_Diy_End] Starting ..."
-	ECHO "[$(date "+%H:%M:%S")] Actions Avaliable: $(df -h | grep "/dev/root" | awk '{printf $4}')"
 	cd ${WORK}
 	MKDIR ${WORK}/bin/Firmware
 	Fw_Path="${WORK}/bin/targets/${TARGET_BOARD}/${TARGET_SUBTARGET}"
@@ -235,8 +312,9 @@ Firmware_Diy_End() {
 	if [[ $(ls) =~ 'AutoBuild-' ]]
 	then
 		cd -
-		mv -f ${Fw_Path}/AutoBuild-* bin/Firmware
+		cp -a ${Fw_Path}/AutoBuild-* bin/Firmware
 	fi
+	ECHO "[$(date "+%H:%M:%S")] Actions Avaliable: $(df -h | grep "/dev/root" | awk '{printf $4}')"
 	ECHO "[Firmware_Diy_End] Done"
 }
 
@@ -262,8 +340,8 @@ Process_Fw_Core() {
 		Fw=${Fw/FORMAT/${Fw_Format}}
 		if [[ -f $1 ]]
 		then
-			ECHO "Moving [$1] to [${Fw}] ..."
-			mv -f $1 ${Fw}
+			ECHO "Copying [$1] to [${Fw}] ..."
+			cp -a $1 ${Fw}
 		else
 			ECHO "Failed to copy [${Fw}] ..."
 		fi
