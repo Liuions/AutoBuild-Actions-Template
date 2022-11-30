@@ -113,6 +113,7 @@ Fw_MFormat=${Fw_MFormat}
 FEEDS_CONF=${WORK}/feeds.conf.default
 Author_URL=${Author_URL}
 ENV_FILE=${GITHUB_ENV}
+
 EOF
 	source ${GITHUB_ENV}
 	echo -e "### VARIABLE LIST ###\n$(cat ${GITHUB_ENV})\n"
@@ -140,6 +141,7 @@ OP_VERSION=${OP_VERSION}
 OP_AUTHOR=${OP_AUTHOR}
 OP_REPO=${OP_REPO}
 OP_BRANCH=${OP_BRANCH}
+
 EOF
 		done ; unset i
 		AutoUpdate_Version=$(awk -F '=' '/Version/{print $2}' $(PKG_Finder d package AutoBuild-Packages)/autoupdate/files/bin/autoupdate | awk 'NR==1')
@@ -212,6 +214,7 @@ Firmware_Diy_Other() {
 		if [[ -n ${Author_URL} ]]
 		then
 			cat >> ${CONFIG_TEMP} <<EOF
+
 CONFIG_KERNEL_BUILD_USER="${Author}"
 CONFIG_KERNEL_BUILD_DOMAIN="${Author_URL}"
 EOF
