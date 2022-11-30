@@ -113,7 +113,6 @@ Fw_MFormat=${Fw_MFormat}
 FEEDS_CONF=${WORK}/feeds.conf.default
 Author_URL=${Author_URL}
 ENV_FILE=${GITHUB_ENV}
-
 EOF
 	source ${GITHUB_ENV}
 	echo -e "### VARIABLE LIST ###\n$(cat ${GITHUB_ENV})\n"
@@ -141,7 +140,6 @@ OP_VERSION=${OP_VERSION}
 OP_AUTHOR=${OP_AUTHOR}
 OP_REPO=${OP_REPO}
 OP_BRANCH=${OP_BRANCH}
-
 EOF
 		done ; unset i
 		AutoUpdate_Version=$(awk -F '=' '/Version/{print $2}' $(PKG_Finder d package AutoBuild-Packages)/autoupdate/files/bin/autoupdate | awk 'NR==1')
@@ -214,7 +212,6 @@ Firmware_Diy_Other() {
 		if [[ -n ${Author_URL} ]]
 		then
 			cat >> ${CONFIG_TEMP} <<EOF
-
 CONFIG_KERNEL_BUILD_USER="${Author}"
 CONFIG_KERNEL_BUILD_DOMAIN="${Author_URL}"
 EOF
@@ -286,6 +283,7 @@ EOF
 
 Firmware_Diy_End() {
 	ECHO "[Firmware_Diy_End] Starting ..."
+	ECHO "[$(date "+%H:%M:%S")] Actions Avaliable: $(df -h | grep "/dev/root" | awk '{printf $4}')"
 	cd ${WORK}
 	MKDIR ${WORK}/bin/Firmware
 	Fw_Path="${WORK}/bin/targets/${TARGET_BOARD}/${TARGET_SUBTARGET}"
@@ -312,9 +310,8 @@ Firmware_Diy_End() {
 	if [[ $(ls) =~ 'AutoBuild-' ]]
 	then
 		cd -
-		cp -a ${Fw_Path}/AutoBuild-* bin/Firmware
+		mv -f ${Fw_Path}/AutoBuild-* bin/Firmware
 	fi
-	ECHO "[$(date "+%H:%M:%S")] Actions Avaliable: $(df -h | grep "/dev/root" | awk '{printf $4}')"
 	ECHO "[Firmware_Diy_End] Done"
 }
 
@@ -340,8 +337,8 @@ Process_Fw_Core() {
 		Fw=${Fw/FORMAT/${Fw_Format}}
 		if [[ -f $1 ]]
 		then
-			ECHO "Copying [$1] to [${Fw}] ..."
-			cp -a $1 ${Fw}
+			ECHO "Moving [$1] to [${Fw}] ..."
+			mv -f $1 ${Fw}
 		else
 			ECHO "Failed to copy [${Fw}] ..."
 		fi
